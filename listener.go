@@ -18,6 +18,9 @@ func newListener(config configuration) ListenCloser {
 	}
 
 	current := config.listeners[0]
+	if current == nil {
+		panic("nil listener")
+	}
 	config.listeners = config.listeners[1:]
 	next := newListener(config)
 	ctx, shutdown := context.WithCancel(context.Background())
