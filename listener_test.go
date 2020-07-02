@@ -21,9 +21,6 @@ type ListenerFixture struct {
 	watchSignals bool
 }
 
-func (this *ListenerFixture) Setup() {
-	this.initialize()
-}
 func (this *ListenerFixture) initialize() {
 	options := []option{
 		Options.AddListeners(this.listeners...),
@@ -34,6 +31,12 @@ func (this *ListenerFixture) initialize() {
 	}
 
 	this.listener = New(options...)
+}
+
+func (this *ListenerFixture) TestPanicWhenProvidedNilListener() {
+	fake := &fakeListener{}
+	this.listeners = append(this.listeners, fake, nil, fake)
+	this.So(this.initialize, should.Panic)
 }
 
 func (this *ListenerFixture) TestWhenProvidedListenerConcludes_BlockUntilClosedIsCalledExplicitly() {
