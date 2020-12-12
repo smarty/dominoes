@@ -1,4 +1,4 @@
-package dominos
+package dominoes
 
 import (
 	"os"

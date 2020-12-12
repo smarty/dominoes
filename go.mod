@@ -1,6 +1,6 @@
-module github.com/smartystreets/dominos
+module github.com/smartystreets/dominoes
 
-go 1.14
+go 1.15
 
 require (
 	github.com/smartystreets/assertions v1.2.0
