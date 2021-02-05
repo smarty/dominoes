@@ -22,6 +22,16 @@ var Options singleton
 type singleton struct{}
 type option func(*configuration)
 
+func (singleton) TryAddListeners(value ...Listener) option {
+	return func(this *configuration) {
+		for _, listener := range value {
+			if listener != nil {
+				this.listeners = append(this.listeners, listener)
+			}
+		}
+	}
+}
+
 func (singleton) AddListeners(value ...Listener) option {
 	return func(this *configuration) { this.listeners = append(this.listeners, value...) }
 }
