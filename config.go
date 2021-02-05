@@ -22,14 +22,16 @@ var Options singleton
 type singleton struct{}
 type option func(*configuration)
 
-func (singleton) TryAddListeners(value ...Listener) option {
-	return func(this *configuration) {
-		for _, listener := range value {
-			if listener != nil {
-				this.listeners = append(this.listeners, listener)
-			}
+func (singleton) AddOptionalListeners(value ...Listener) option {
+	var populated []Listener
+
+	for _, listener := range value {
+		if listener != nil {
+			populated = append(populated, listener)
 		}
 	}
+
+	return Options.AddListeners(populated...)
 }
 
 func (singleton) AddListeners(value ...Listener) option {
