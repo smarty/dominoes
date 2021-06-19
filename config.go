@@ -1,12 +1,14 @@
 package dominoes
 
 import (
+	"io"
 	"os"
 	"syscall"
 )
 
 type configuration struct {
 	listeners []Listener
+	managed   []io.Closer
 	signals   []os.Signal
 	logger    logger
 }
@@ -36,6 +38,9 @@ func (singleton) AddOptionalListeners(value ...Listener) option {
 
 func (singleton) AddListeners(value ...Listener) option {
 	return func(this *configuration) { this.listeners = append(this.listeners, value...) }
+}
+func (singleton) AddManagedResource(value ...io.Closer) option {
+	return func(this *configuration) { this.managed = append(this.managed, value...) }
 }
 func (singleton) WatchTerminateSignals() option {
 	return Options.WatchSignals(syscall.SIGINT, syscall.SIGTERM)

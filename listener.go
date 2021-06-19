@@ -10,6 +10,7 @@ type defaultListener struct {
 	next     Listener
 	ctx      context.Context
 	shutdown context.CancelFunc
+	managed  []io.Closer
 }
 
 func newListener(config configuration) ListenCloser {
@@ -21,10 +22,19 @@ func newListener(config configuration) ListenCloser {
 	if current == nil {
 		panic("nil listener")
 	}
-	config.listeners = config.listeners[1:]
-	next := newListener(config)
+
 	ctx, shutdown := context.WithCancel(context.Background())
-	return defaultListener{current: current, next: next, ctx: ctx, shutdown: shutdown}
+	config.listeners = config.listeners[1:]
+	managed := config.managed
+	config.managed = nil
+
+	return defaultListener{
+		ctx:      ctx,
+		shutdown: shutdown,
+		current:  current,
+		next:     newListener(config),
+		managed:  managed,
+	}
 }
 
 func (this defaultListener) Listen() {
@@ -36,6 +46,7 @@ func (this defaultListener) Listen() {
 	}
 }
 func (this defaultListener) listen() {
+	defer closeResources(this.managed...) // after the last/inner-most resource is closed, close these managed resources
 	this.current.Listen()
 	<-this.ctx.Done()
 	closeListener(this.next) // current just completed, now cause the next in line to conclude (if one exists)
@@ -47,7 +58,14 @@ func (this defaultListener) Close() error {
 	return nil
 }
 func closeListener(listener interface{}) {
-	if listener, ok := listener.(io.Closer); ok {
-		_ = listener.Close()
+	if resource, ok := listener.(io.Closer); ok {
+		closeResources(resource)
+	}
+}
+func closeResources(resources ...io.Closer) {
+	for _, resource := range resources {
+		if resource != nil {
+			_ = resource.Close()
+		}
 	}
 }
