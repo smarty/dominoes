@@ -59,15 +59,13 @@ func (singleton) apply(options ...option) option {
 		}
 
 		if len(this.listeners) == 0 {
-			this.listeners = append(this.listeners, nop{})
+			this.listeners = append(this.listeners, &nop{})
 		}
 	}
 }
 func (singleton) defaults(options ...option) []option {
-	var defaultLogger = nop{}
-
 	return append([]option{
-		Options.Logger(defaultLogger),
+		Options.Logger(&nop{}),
 	}, options...)
 }
 
@@ -75,7 +73,7 @@ func (singleton) defaults(options ...option) []option {
 
 type nop struct{}
 
-func (nop) Printf(_ string, _ ...interface{}) {}
-func (nop) Println(_ ...interface{})          {}
+func (*nop) Printf(_ string, _ ...interface{}) {}
+func (*nop) Println(_ ...interface{})          {}
 
-func (nop) Listen() {}
+func (*nop) Listen() {}

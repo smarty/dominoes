@@ -36,6 +36,7 @@ func newListener(config configuration, depth int) ListenCloser {
 		current:  current,
 		next:     newListener(config, depth+1),
 		managed:  managed,
+		root:     depth == 0,
 		logger:   config.logger,
 	}
 }
