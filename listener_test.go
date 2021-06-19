@@ -85,7 +85,7 @@ func (this *ListenerFixture) TestWhenWatchingForOSSignals_ItShouldCloseProvidedL
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		this.listener.(signalWatcher).channel <- os.Interrupt
+		this.listener.(*signalWatcher).channel <- os.Interrupt
 	}()
 
 	started := time.Now().UTC()

@@ -16,7 +16,7 @@ type configuration struct {
 func New(options ...option) ListenCloser {
 	var config configuration
 	Options.apply(options...)(&config)
-	return newSignalWatcher(newListener(config), config)
+	return newSignalWatcher(newListener(config, 0), config)
 }
 
 var Options singleton

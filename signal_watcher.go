@@ -22,7 +22,7 @@ func newSignalWatcher(inner ListenCloser, config configuration) ListenCloser {
 	}
 
 	ctx, shutdown := context.WithCancel(context.Background())
-	return signalWatcher{
+	return &signalWatcher{
 		channel:  make(chan os.Signal, 4),
 		ctx:      ctx,
 		shutdown: shutdown,
@@ -32,12 +32,12 @@ func newSignalWatcher(inner ListenCloser, config configuration) ListenCloser {
 	}
 }
 
-func (this signalWatcher) Listen() {
+func (this *signalWatcher) Listen() {
 	defer this.shutdown() // unblock wait method so we don't wait for signals anymore
 	go this.wait()
 	this.inner.Listen()
 }
-func (this signalWatcher) wait() {
+func (this *signalWatcher) wait() {
 	signal.Notify(this.channel, this.signals...)
 
 	select {
@@ -51,7 +51,7 @@ func (this signalWatcher) wait() {
 	_ = this.inner.Close()
 }
 
-func (this signalWatcher) Close() error {
+func (this *signalWatcher) Close() error {
 	this.shutdown()
 	return nil
 }
