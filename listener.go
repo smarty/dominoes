@@ -50,7 +50,7 @@ func (this *defaultListener) Listen() {
 }
 func (this *defaultListener) listen() {
 	defer func() {
-		closeResources(this.managed...) // after the last/inner-most resource is closed, close these managed resources
+		CloseResources(this.managed...) // after the last/inner-most resource is closed, close these managed resources
 		if this.root {
 			this.logger.Printf("[INFO] All listeners have concluded.")
 		}
@@ -67,10 +67,11 @@ func (this *defaultListener) Close() error {
 }
 func closeListener(listener interface{}) {
 	if resource, ok := listener.(io.Closer); ok {
-		closeResources(resource)
+		CloseResources(resource)
 	}
 }
-func closeResources(resources ...io.Closer) {
+
+func CloseResources(resources ...io.Closer) {
 	for _, resource := range resources {
 		if resource != nil {
 			_ = resource.Close()
