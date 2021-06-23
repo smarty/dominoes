@@ -11,11 +11,10 @@ type defaultListener struct {
 	ctx      context.Context
 	shutdown context.CancelFunc
 	managed  []io.Closer
-	root     bool
 	logger   logger
 }
 
-func newListener(config configuration, depth int) ListenCloser {
+func newListener(config configuration) ListenCloser {
 	if len(config.listeners) == 0 {
 		return nil
 	}
@@ -28,15 +27,16 @@ func newListener(config configuration, depth int) ListenCloser {
 	ctx, shutdown := context.WithCancel(context.Background())
 	config.listeners = config.listeners[1:]
 	managed := config.managed
-	config.managed = nil
+	if len(config.listeners) > 0 {
+		managed = nil
+	}
 
 	return &defaultListener{
 		ctx:      ctx,
 		shutdown: shutdown,
 		current:  current,
-		next:     newListener(config, depth+1),
+		next:     newListener(config),
 		managed:  managed,
-		root:     depth == 0,
 		logger:   config.logger,
 	}
 }
@@ -50,15 +50,19 @@ func (this *defaultListener) Listen() {
 	}
 }
 func (this *defaultListener) listen() {
-	defer func() {
-		CloseResources(this.managed...) // after the last/inner-most resource is closed, close these managed resources
-		if this.root {
-			this.logger.Printf("[INFO] All listeners have concluded.")
-		}
-	}()
+	defer this.onListenComplete()
 	this.current.Listen()
 	<-this.ctx.Done()
 	closeListener(this.next) // current just completed, now cause the next in line to conclude (if one exists)
+}
+func (this *defaultListener) onListenComplete() {
+	if this.next != nil {
+		return
+	}
+
+	CloseResources(this.managed...) // after the last/inner-most resource is closed, close these managed resources
+	this.managed = this.managed[0:0]
+	this.logger.Printf("[INFO] All listeners have concluded.")
 }
 
 func (this *defaultListener) Close() error {
