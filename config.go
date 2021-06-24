@@ -12,6 +12,7 @@ type configuration struct {
 	managed   []io.Closer
 	signals   []os.Signal
 	logger    logger
+	shutdown  context.CancelFunc
 }
 
 func New(options ...option) ListenCloser {
@@ -44,7 +45,7 @@ func (singleton) AddManagedResource(value ...io.Closer) option {
 	return func(this *configuration) { this.managed = append(this.managed, value...) }
 }
 func (singleton) AddContextShutdown(value context.CancelFunc) option {
-	return func(this *configuration) { this.managed = append(this.managed, shutdownCloser(value)) }
+	return func(this *configuration) { this.shutdown = value }
 }
 func (singleton) WatchTerminateSignals() option {
 	return Options.WatchSignals(syscall.SIGINT, syscall.SIGTERM)
@@ -65,6 +66,8 @@ func (singleton) apply(options ...option) option {
 		if len(this.listeners) == 0 {
 			this.listeners = append(this.listeners, &nop{})
 		}
+
+		this.managed = append(this.managed, shutdownCloser(this.shutdown))
 	}
 }
 func (singleton) defaults(options ...option) []option {
@@ -78,7 +81,9 @@ func (singleton) defaults(options ...option) []option {
 type shutdownCloser context.CancelFunc
 
 func (this shutdownCloser) Close() error {
-	this()
+	if this != nil {
+		this()
+	}
 	return nil
 }
 
