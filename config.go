@@ -1,6 +1,7 @@
 package dominoes
 
 import (
+	"context"
 	"io"
 	"os"
 	"syscall"
@@ -42,6 +43,9 @@ func (singleton) AddListeners(value ...Listener) option {
 func (singleton) AddManagedResource(value ...io.Closer) option {
 	return func(this *configuration) { this.managed = append(this.managed, value...) }
 }
+func (singleton) AddContextShutdown(value context.CancelFunc) option {
+	return func(this *configuration) { this.managed = append(this.managed, shutdownCloser(value)) }
+}
 func (singleton) WatchTerminateSignals() option {
 	return Options.WatchSignals(syscall.SIGINT, syscall.SIGTERM)
 }
@@ -67,6 +71,15 @@ func (singleton) defaults(options ...option) []option {
 	return append([]option{
 		Options.Logger(&nop{}),
 	}, options...)
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type shutdownCloser context.CancelFunc
+
+func (this shutdownCloser) Close() error {
+	this()
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
