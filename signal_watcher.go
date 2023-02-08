@@ -33,7 +33,7 @@ func newSignalWatcher(inner ListenCloser, config configuration) ListenCloser {
 }
 
 func (this *signalWatcher) Listen() {
-	defer this.shutdown() // unblock wait method so we don't wait for signals anymore
+	defer this.shutdown() // unblock wait method so we don't wait for signals anymore (in case Close() didn't get called)
 	go this.wait()
 	this.inner.Listen()
 }
