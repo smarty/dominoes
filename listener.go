@@ -70,7 +70,7 @@ func (this *defaultListener) Close() error {
 	closeListener(this.current)
 	return nil
 }
-func closeListener(listener interface{}) {
+func closeListener(listener any) {
 	if resource, ok := listener.(io.Closer); ok {
 		CloseResources(resource)
 	}

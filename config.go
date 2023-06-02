@@ -91,7 +91,7 @@ func (this shutdownCloser) Close() error {
 
 type nop struct{}
 
-func (*nop) Printf(_ string, _ ...interface{}) {}
-func (*nop) Println(_ ...interface{})          {}
+func (*nop) Printf(_ string, _ ...any) {}
+func (*nop) Println(_ ...any)          {}
 
 func (*nop) Listen() {}

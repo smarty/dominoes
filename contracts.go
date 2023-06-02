@@ -12,5 +12,5 @@ type ListenCloser interface {
 }
 
 type logger interface {
-	Printf(string, ...interface{})
+	Printf(string, ...any)
 }
