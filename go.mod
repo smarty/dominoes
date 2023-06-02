@@ -1,4 +1,4 @@
-module github.com/smartystreets/dominoes
+module github.com/smarty/dominoes
 
 go 1.18
 
