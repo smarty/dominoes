@@ -125,14 +125,17 @@ type fakeListener struct {
 	listenTime  time.Time
 	closeCount  int
 	closeTime   time.Time
+	closeError  error
 }
 
 func (this *fakeListener) Listen() {
 	this.listenCount++
 	this.listenTime = time.Now().UTC()
+	time.Sleep(time.Microsecond * 10)
 }
 func (this *fakeListener) Close() error {
 	this.closeCount++
 	this.closeTime = time.Now().UTC()
-	return nil
+	time.Sleep(time.Microsecond * 10)
+	return this.closeError
 }
