@@ -42,7 +42,7 @@ func newListener(config configuration) ListenCloser {
 }
 
 func (this *linkedListener) Listen() {
-	if this.next == nil {
+	if this.isLast() {
 		this.listen()
 	} else {
 		go this.listen()
@@ -56,13 +56,15 @@ func (this *linkedListener) listen() {
 	closeListener(this.next) // current just completed, now cause the next in line to conclude (if one exists)
 }
 func (this *linkedListener) onListenComplete() {
-	if this.next != nil {
+	if !this.isLast() {
 		return
 	}
-
-	CloseResources(this.managed...) // after the last/inner-most resource is closed, close these managed resources
+	CloseResources(this.managed...)
 	this.managed = this.managed[0:0]
 	this.logger.Printf("[INFO] All listeners have concluded.")
+}
+func (this *linkedListener) isLast() bool {
+	return this.next == nil
 }
 
 func (this *linkedListener) Close() error {
