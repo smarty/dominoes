@@ -22,9 +22,9 @@ type SequentialListenerFixture struct {
 }
 
 func (this *SequentialListenerFixture) Setup() {
-	this.inner1 = &fakeListener{}
-	this.inner2 = &fakeListener{}
-	this.inner3 = &fakeListener{}
+	this.inner1 = newFakeListener()
+	this.inner2 = newFakeListener()
+	this.inner3 = newFakeListener()
 	this.outer = NewSequentialListener(this.inner1, this.inner2, this.inner3)
 }
 
