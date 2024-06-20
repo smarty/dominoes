@@ -15,42 +15,24 @@ func TestListenerFixture(t *testing.T) {
 
 type ListenerFixture struct {
 	*gunit.Fixture
-
-	listener     ListenCloser
-	listeners    []Listener
-	watchSignals bool
-}
-
-func (this *ListenerFixture) initialize() {
-	options := []option{
-		Options.AddListeners(this.listeners...),
-	}
-
-	if this.watchSignals {
-		options = append(options, Options.WatchTerminateSignals())
-	}
-
-	this.listener = New(options...)
 }
 
 func (this *ListenerFixture) TestPanicWhenProvidedNilListener() {
 	fake := &fakeListener{}
-	this.listeners = append(this.listeners, fake, nil, fake)
-	this.So(this.initialize, should.Panic)
+	this.So(func() { New(Options.AddListeners(fake, nil, fake)) }, should.Panic)
 }
 
 func (this *ListenerFixture) TestWhenProvidedListenerConcludes_BlockUntilClosedIsCalledExplicitly() {
 	fake := &fakeListener{}
-	this.listeners = append(this.listeners, fake)
-	this.initialize()
+	listener := New(Options.AddListeners(fake))
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		_ = this.listener.Close()
+		_ = listener.Close()
 	}()
 
 	started := time.Now().UTC()
-	this.listener.Listen()
+	listener.Listen()
 
 	this.So(time.Since(started), should.BeGreaterThan, time.Millisecond)
 	this.So(fake.closeTime, should.HappenAfter, fake.listenTime)
@@ -61,16 +43,15 @@ func (this *ListenerFixture) TestWhenProvidedListenerConcludes_BlockUntilClosedI
 
 func (this *ListenerFixture) TestWhenMultipleListenersProvided_ItShouldCascadeCloseWhenHeadListenerIsClosed() {
 	fakeListeners := []*fakeListener{{}, {}, {}}
-	this.listeners = append(this.listeners, fakeListeners[0], fakeListeners[1], fakeListeners[2])
-	this.initialize()
+	listener := New(Options.AddListeners(fakeListeners[0], fakeListeners[1], fakeListeners[2]))
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		_ = this.listener.Close()
+		_ = listener.Close()
 	}()
 
 	started := time.Now().UTC()
-	this.listener.Listen()
+	listener.Listen()
 
 	this.So(time.Since(started), should.BeGreaterThan, time.Millisecond)
 	this.So([]time.Time{fakeListeners[0].closeTime, fakeListeners[1].closeTime, fakeListeners[2].closeTime},
@@ -79,17 +60,18 @@ func (this *ListenerFixture) TestWhenMultipleListenersProvided_ItShouldCascadeCl
 
 func (this *ListenerFixture) TestWhenWatchingForOSSignals_ItShouldCloseProvidedListenerWhenSignalReceived() {
 	fake := &fakeListener{}
-	this.listeners = append(this.listeners, fake)
-	this.watchSignals = true
-	this.initialize()
+	listener := New(
+		Options.AddListeners(fake),
+		Options.WatchTerminateSignals(),
+	)
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		this.listener.(*signalWatcher).channel <- os.Interrupt
+		listener.(*signalWatcher).channel <- os.Interrupt
 	}()
 
 	started := time.Now().UTC()
-	this.listener.Listen()
+	listener.Listen()
 
 	this.So(time.Since(started), should.BeGreaterThan, time.Millisecond)
 	this.So(fake.closeTime, should.HappenAfter, fake.listenTime)
@@ -99,17 +81,18 @@ func (this *ListenerFixture) TestWhenWatchingForOSSignals_ItShouldCloseProvidedL
 }
 func (this *ListenerFixture) TestWhenWatchingForOSSignals_ItShouldCloseProvidedListenerWhenCloseIsInvoked() {
 	fake := &fakeListener{}
-	this.listeners = append(this.listeners, fake)
-	this.watchSignals = true
-	this.initialize()
+	listener := New(
+		Options.AddListeners(fake),
+		Options.WatchTerminateSignals(),
+	)
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		_ = this.listener.Close()
+		_ = listener.Close()
 	}()
 
 	started := time.Now().UTC()
-	this.listener.Listen()
+	listener.Listen()
 
 	this.So(time.Since(started), should.BeGreaterThan, time.Millisecond)
 	this.So(fake.closeTime, should.HappenAfter, fake.listenTime)
