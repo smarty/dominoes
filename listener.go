@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-type defaultListener struct {
+type linkedListener struct {
 	current  Listener
 	next     Listener
 	ctx      context.Context
@@ -31,7 +31,7 @@ func newListener(config configuration) ListenCloser {
 		managed = nil
 	}
 
-	return &defaultListener{
+	return &linkedListener{
 		ctx:      ctx,
 		shutdown: shutdown,
 		current:  current,
@@ -41,7 +41,7 @@ func newListener(config configuration) ListenCloser {
 	}
 }
 
-func (this *defaultListener) Listen() {
+func (this *linkedListener) Listen() {
 	if this.next == nil {
 		this.listen()
 	} else {
@@ -49,13 +49,13 @@ func (this *defaultListener) Listen() {
 		this.next.Listen()
 	}
 }
-func (this *defaultListener) listen() {
+func (this *linkedListener) listen() {
 	defer this.onListenComplete()
 	this.current.Listen()
 	<-this.ctx.Done()
 	closeListener(this.next) // current just completed, now cause the next in line to conclude (if one exists)
 }
-func (this *defaultListener) onListenComplete() {
+func (this *linkedListener) onListenComplete() {
 	if this.next != nil {
 		return
 	}
@@ -65,7 +65,7 @@ func (this *defaultListener) onListenComplete() {
 	this.logger.Printf("[INFO] All listeners have concluded.")
 }
 
-func (this *defaultListener) Close() error {
+func (this *linkedListener) Close() error {
 	defer this.shutdown()
 	closeListener(this.current)
 	return nil
