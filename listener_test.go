@@ -23,22 +23,26 @@ func closeAfterDelay(l ListenCloser) {
 	_ = l.Close()
 }
 
+func (this *ListenerFixture) New(options ...option) ListenCloser {
+	return New(append(options, Options.Logger(this))...)
+}
+
 func (this *ListenerFixture) TestPanicWhenProvidedNilListener() {
 	fake := newFakeListener()
-	this.So(func() { New(Options.AddListeners(fake, nil, fake)) }, should.Panic)
+	this.So(func() { this.New(Options.AddListeners(fake, nil, fake)) }, should.Panic)
 }
 func (this *ListenerFixture) TestNoPanicWhenListenersAreOptional() {
 	fake := newFakeListener()
-	this.So(func() { New(Options.AddOptionalListeners(fake, nil, fake)) }, should.NotPanic)
+	this.So(func() { this.New(Options.AddOptionalListeners(fake, nil, fake)) }, should.NotPanic)
 }
 func (this *ListenerFixture) TestNoListeners_FinishesWithoutPanic() {
-	listener := New()
+	listener := this.New()
 	go closeAfterDelay(listener)
 	this.So(listener.Listen, should.NotPanic)
 }
 func (this *ListenerFixture) TestWhenProvidedListenerConcludes_BlockUntilClosedIsCalledExplicitly() {
 	fake := newFakeListener()
-	listener := New(Options.AddListeners(fake))
+	listener := this.New(Options.AddListeners(fake))
 
 	go closeAfterDelay(listener)
 
@@ -53,7 +57,7 @@ func (this *ListenerFixture) TestWhenProvidedListenerConcludes_BlockUntilClosedI
 }
 func (this *ListenerFixture) TestWhenMultipleListenersProvided_ItShouldCascadeCloseWhenHeadListenerIsClosed() {
 	fakeListeners := []*fakeListener{newFakeListener(), newFakeListener(), newFakeListener()}
-	listener := New(Options.AddListeners(fakeListeners[0], fakeListeners[1], fakeListeners[2]))
+	listener := this.New(Options.AddListeners(fakeListeners[0], fakeListeners[1], fakeListeners[2]))
 
 	go closeAfterDelay(listener)
 
@@ -66,7 +70,7 @@ func (this *ListenerFixture) TestWhenMultipleListenersProvided_ItShouldCascadeCl
 }
 func (this *ListenerFixture) TestWhenWatchingForOSSignals_ItShouldCloseProvidedListenerWhenSignalReceived() {
 	fake := newFakeListener()
-	listener := New(
+	listener := this.New(
 		Options.AddListeners(fake),
 		Options.WatchTerminateSignals(),
 	)
@@ -87,7 +91,7 @@ func (this *ListenerFixture) TestWhenWatchingForOSSignals_ItShouldCloseProvidedL
 }
 func (this *ListenerFixture) TestWhenWatchingForOSSignals_ItShouldCloseProvidedListenerWhenCloseIsInvoked() {
 	fake := newFakeListener()
-	listener := New(
+	listener := this.New(
 		Options.AddListeners(fake),
 		Options.WatchTerminateSignals(),
 	)
@@ -108,7 +112,7 @@ func (this *ListenerFixture) TestManagedResourcesClosedAlongsideListeners() {
 	fake2 := newFakeListener()
 	resource1 := newFakeResource()
 	resource2 := newFakeResource()
-	listener := New(
+	listener := this.New(
 		Options.AddListeners(fake1, fake2),
 		Options.AddManagedResource(resource1, resource2),
 	)
@@ -122,7 +126,7 @@ func (this *ListenerFixture) TestManagedResourcesClosedAlongsideListeners() {
 }
 func (this *ListenerFixture) TestContextCancellationAsManagedResource() {
 	ctx, cancel := context.WithCancel(context.Background())
-	listener := New(Options.AddContextShutdown(cancel))
+	listener := this.New(Options.AddContextShutdown(cancel))
 	go closeAfterDelay(listener)
 	listener.Listen()
 	<-ctx.Done() // if cancel() was not called, this will block forever.
